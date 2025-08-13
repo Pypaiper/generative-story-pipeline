@@ -265,10 +265,6 @@ resource "aws_ecr_repository" "pypaiper_repository" {
 }
 
 
-resource "aws_iam_role_policy_attachment" "sagemaker_policy_attachment" {
-  role       = aws_iam_role.sagemaker_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess" # Or a more restrictive policy
-}
 
 resource "aws_sagemaker_notebook_instance" "ml_notebook_instance" {
   name          = "ml-image-notebook"
