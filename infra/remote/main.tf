@@ -263,3 +263,27 @@ resource "aws_ecr_repository" "pypaiper_repository" {
   }
 
 }
+
+
+resource "aws_sagemaker_image" "ml_sagemaker" {
+  image_name = "ml-name"
+  role_arn   = aws_iam_role.sagemaker_role.arn # Replace with your SageMaker execution role ARN
+  uri        = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest"
+}
+
+resource "aws_sagemaker_notebook_instance" "ml_notebook_instance" {
+  name             = "ml-custom-notebook"
+  instance_type    = "ml.t3.medium"
+  role_arn         = aws_iam_role.sagemaker_role.arn
+  platform_identifier = "notebook-instance-linux"
+  image_name       = aws_sagemaker_image.ml_sagemaker.image_name
+  lifecycle_config_name = aws_sagemaker_notebook_instance_lifecycle_configuration.example.name
+  tags = {
+    Name = "my-sagemaker-notebook"
+    DB_PORT = var.db_port
+    DB_NAME = var.db_name
+    DB_USER = var.db_user
+    DB_PASSWORD = var.db_password
+    BUCKET_NAME = var.bucket_name
+  }
+}
