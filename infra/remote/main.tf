@@ -268,7 +268,6 @@ resource "aws_ecr_repository" "pypaiper_repository" {
 resource "aws_sagemaker_image" "ml_sagemaker" {
   image_name = "ml-name"
   role_arn   = aws_iam_role.sagemaker_role.arn # Replace with your SageMaker execution role ARN
-  uri        = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest"
 }
 
 resource "aws_sagemaker_notebook_instance" "ml_notebook_instance" {
