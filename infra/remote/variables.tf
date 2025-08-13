@@ -1,20 +1,35 @@
-variable "bucket_name" {
-  type = string
-}
-
-variable "db_name" {
-  type = string
+variable "region" {
+    description = "The region of deployment."
+    type        = string
+    sensitive   = true # Mark as sensitive to prevent logging
 }
 
 variable "db_user" {
-  type = string
+    description = "The admin username of database."
+    type        = string
+    sensitive   = true # Mark as sensitive to prevent logging
 }
 
 variable "db_password" {
-  type = string
+    description = "The admin password of database."
+    type        = string
+    sensitive   = true # Mark as sensitive to prevent logging
+}
+
+variable "db_name" {
+    description = "The name of database."
+    type        = string
+    sensitive   = true # Mark as sensitive to prevent logging
 }
 
 variable "db_port" {
-  type = number
-  default = 5432
+    description = "The name of database."
+    type        = string
+    sensitive   = true # Mark as sensitive to prevent logging
+}
+
+variable "bucket_name" {
+    description = "The name of s3 bucket."
+    type        = string
+    sensitive   = true # Mark as sensitive to prevent logging
 }
