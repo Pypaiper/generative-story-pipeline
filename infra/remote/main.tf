@@ -273,7 +273,7 @@ resource "aws_ecr_repository" "pypaiper_repository" {
 
 
 resource "aws_sagemaker_image" "example" {
-  image_name = "example"
+  image_name = "pypaiper"
   role_arn   = aws_iam_role.sagemaker_role.arn
 }
 
@@ -288,7 +288,7 @@ resource "aws_sagemaker_app_image_config" "example" {
 }
 
 resource "aws_sagemaker_image_version" "example" {
-  image_name = aws_sagemaker_image.example.id
+  image_name = "pypaiper"
   base_image = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest"
 }
 
