@@ -160,6 +160,13 @@ resource "aws_iam_role" "sagemaker_role" {
           Service = "s3.amazonaws.com"
         }
       },
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      },
     ]
   })
 }
