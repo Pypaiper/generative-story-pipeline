@@ -289,7 +289,7 @@ resource "aws_sagemaker_domain" "example" {
   domain_name = "example"
   auth_mode   = "IAM"
   vpc_id      = aws_vpc.main.id
-  subnet_ids  = [aws_subnet.private[*].id]
+  subnet_ids  = aws_subnet.private[*].id
 
   default_user_settings {
     execution_role = aws_iam_role.sagemaker_role.arn
