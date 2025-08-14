@@ -282,7 +282,7 @@ resource "aws_sagemaker_app_image_config" "example" {
 
 resource "aws_sagemaker_image_version" "example" {
   image_name = aws_sagemaker_image.example.id
-  base_image = "latest"
+  base_image = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest"
 }
 
 resource "aws_sagemaker_domain" "example" {
