@@ -265,23 +265,40 @@ resource "aws_ecr_repository" "pypaiper_repository" {
 }
 
 
+resource "aws_sagemaker_image" "example" {
+  image_name = "example"
+  role_arn   = aws_iam_role.example.arn
+}
 
-resource "aws_sagemaker_notebook_instance" "ml_notebook_instance" {
-  name          = "ml-image-notebook"
-  instance_type = "ml.t3.medium"
-  role_arn      = aws_iam_role.sagemaker_role.arn
-  platform_identifier = "notebook-al2-v1" # Or notebook-al2-v2, depending on your image base
-  lifecycle_config_name = aws_sagemaker_notebook_instance_lifecycle_configuration.example.name # Optional: if using lifecycle configurations
-  default_code_repository = {
-    repository_url = aws_ecr_repository.pypaiper_repository.repository_url
-    image_name     = "latest"
+resource "aws_sagemaker_app_image_config" "example" {
+  app_image_config_name = "example"
+
+  kernel_gateway_image_config {
+    kernel_spec {
+      name = "example"
+    }
   }
-  # Specify the custom image from ECR
-  root_access = "Enabled" # Required for custom images
-  volume_size_in_gb = 20 # Adjust as needed
+}
 
-  # For custom images, the image name is typically associated with a SageMaker Image resource
-  # For direct ECR image usage with notebook instances, consider alternative approaches like
-  # lifecycle configurations to pull and use the image, or ensure your base image is compatible
-  # with SageMaker's default kernel environment.
+resource "aws_sagemaker_image_version" "example" {
+  image_name = aws_sagemaker_image.example.id
+  base_image = "latest"
+}
+
+resource "aws_sagemaker_domain" "example" {
+  domain_name = "example"
+  auth_mode   = "IAM"
+  vpc_id      = aws_vpc.main.id
+  subnet_ids  = [aws_subnet.private.id]
+
+  default_user_settings {
+    execution_role = aws_iam_role.sagemaker_role.arn
+
+    kernel_gateway_app_settings {
+      custom_image {
+        app_image_config_name = aws_sagemaker_app_image_config.example.app_image_config_name
+        image_name            = aws_sagemaker_image_version.example.image_name
+      }
+    }
+  }
 }
