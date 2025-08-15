@@ -218,7 +218,6 @@ resource "aws_iam_role_policy_attachment" "sagemaker_s3_attachment" {
 }
 
 
-
 resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "example" {
   name        = "my-lifecycle-config"
 
@@ -272,39 +271,55 @@ resource "aws_ecr_repository" "pypaiper_repository" {
 }
 
 
-resource "aws_sagemaker_image" "example" {
-  image_name = "pypaiper"
-  role_arn   = aws_iam_role.sagemaker_role.arn
+resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "lc" {
+  name      = "foo"
+  on_create = base64encode("echo foo")
+  on_start  = base64encode("echo bar")
 }
 
-resource "aws_sagemaker_app_image_config" "example" {
-  app_image_config_name = "example"
 
-  kernel_gateway_image_config {
-    kernel_spec {
-      name = "example"
-    }
+# Create a SageMaker Image
+resource "aws_sagemaker_image" "my_custom_image" {
+  image_name = "pypaiper"
+  role_arn   = aws_iam_role.sagemaker_role.arn
+  tags = {
+    Environment = "Development"
   }
 }
 
-resource "aws_sagemaker_image_version" "example" {
-  image_name = "pypaiper"
+# Create a SageMaker Image Version
+resource "aws_sagemaker_image_version" "my_custom_image_version" {
+  image_name = aws_sagemaker_image.my_custom_image.id
+  # Replace with your ECR image URI (e.g., <account_id>.dkr.ecr.<region>.amazonaws.com/my-ecr-repo:latest)
   base_image = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest"
 }
 
-resource "aws_sagemaker_domain" "example" {
-  domain_name = "example"
-  auth_mode   = "IAM"
-  vpc_id      = aws_vpc.main.id
-  subnet_ids  = aws_subnet.private[*].id
 
+
+
+resource "aws_sagemaker_app_image_config" "my_custom_app_config" {
+  app_image_config_name = "my-custom-app-config"
+  kernel_gateway_image_config {
+    kernel_specs = [{
+      display_name = "Python 3 (Custom)"
+      name         = "python3"
+    }]
+  }
+}
+
+resource "aws_sagemaker_domain" "my_sagemaker_domain" {
+  domain_name = "my-sagemaker-domain"
+  auth_mode   = "SSO" # Or "IAM"
+  vpc_id      = aws_vpc.main.id
+  subnet_ids  = aws_subnet.private.*.id
+  
   default_user_settings {
     execution_role = aws_iam_role.sagemaker_role.arn
-
     kernel_gateway_app_settings {
       custom_image {
-        app_image_config_name = aws_sagemaker_app_image_config.example.app_image_config_name
-        image_name            = aws_sagemaker_image_version.example.image_name
+        app_image_config_name = aws_sagemaker_app_image_config.my_custom_app_config.app_image_config_name
+        image_name            = aws_sagemaker_image.my_custom_image.image_name
+        image_version_number  = aws_sagemaker_image_version.my_custom_image_version.version
       }
     }
   }
