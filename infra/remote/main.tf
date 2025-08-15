@@ -300,10 +300,10 @@ resource "aws_sagemaker_image_version" "my_custom_image_version" {
 resource "aws_sagemaker_app_image_config" "my_custom_app_config" {
   app_image_config_name = "my-custom-app-config"
   kernel_gateway_image_config {
-    kernel_specs = [{
+    kernel_spec {
       display_name = "Python 3 (Custom)"
       name         = "python3"
-    }]
+    }
   }
 }
 
