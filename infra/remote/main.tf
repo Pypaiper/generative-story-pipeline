@@ -197,6 +197,9 @@ resource "aws_iam_policy" "sagemaker_s3_policy" {
           "ecr:BatchGetImage", 
           "ecr:DescribeImages",
           "sagemaker:DescribeImageVersion",
+          "sagemaker:DescribeDomain",
+          "sagemaker:ListDomains",
+          "iam:PassRole",
         ]
         Effect   = "Allow"
         Resource = [
@@ -318,7 +321,7 @@ resource "aws_ecr_repository_policy" "my_repository_policy" {
 
 resource "aws_sagemaker_image_version" "example" {
   image_name = aws_sagemaker_image.pypaiper.id
-  base_image = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest"
+  base_image = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest1"
 }
 
 resource "aws_sagemaker_app_image_config" "example" {
@@ -331,11 +334,14 @@ resource "aws_sagemaker_app_image_config" "example" {
   }
 }
 
+
+
 resource "aws_sagemaker_domain" "example" {
   domain_name = "example"
   auth_mode   = "IAM"
   vpc_id      = aws_vpc.main.id
   subnet_ids  = aws_subnet.private.*.id
+
 
   default_user_settings {
     execution_role = aws_iam_role.sagemaker_role.arn
@@ -344,7 +350,25 @@ resource "aws_sagemaker_domain" "example" {
       custom_image {
         app_image_config_name = aws_sagemaker_app_image_config.example.app_image_config_name
         image_name            = aws_sagemaker_image_version.example.image_name
+        image_version_number = 9
       }
+    }
+  }
+
+  default_space_settings {
+    execution_role = aws_iam_role.sagemaker_role.arn
+    jupyter_lab_app_settings {
+      default_resource_spec {
+        instance_type = "ml.t3.medium"
+        sagemaker_image_arn = aws_sagemaker_image.pypaiper.arn
+      }
+      # Optional:
+      # app_lifecycle_management {
+      #   lifecycle_config_arn = "arn:aws:sagemaker:us-east-1:123456789012:app-lifecycle-config/my-jupyterlab-config"
+      # }
+      # code_repository {
+      #   repository_url = "https://github.com/my-org/my-repo.git"
+      # }
     }
   }
 }

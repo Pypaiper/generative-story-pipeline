@@ -85,8 +85,8 @@ RUN micromamba run -n opensora pip3 install --no-cache-dir \
 # # Commands ran each merge
 # # Copy local content and reinstall opensora package
 RUN mkdir /home/$MAMBA_USER -p
-COPY .. /home/$MAMBA_USER/
+COPY . /home/$MAMBA_USER/
 RUN  cd /home/$MAMBA_USER && micromamba run -n opensora pip3 install . 
 
 # Set default command for JupyterLab
-CMD ["micromamba", "run", "-n", "/root/.conda/envs/opensora", "jupyter-lab", "--ip='*'", "--NotebookApp.token=''", "--NotebookApp.password=''", "--port=8888", "--no-browser", "--allow-root"]
+CMD ["micromamba", "run", "-n", "opensora", "jupyter-lab", "--ip='*'", "--NotebookApp.token=''", "--NotebookApp.password=''", "--port=8888", "--no-browser", "--allow-root"]
