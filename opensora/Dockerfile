@@ -1,5 +1,7 @@
-FROM nvidia/cuda:12.1.0-devel-ubuntu20.04
+#FROM nvidia/cuda:12.1.0-devel-ubuntu20.04
+FROM public.ecr.aws/sagemaker/sagemaker-distribution:latest-gpu
 
+USER root
 # ARGS for sagemaker 
 ARG NB_USER="sagemaker-user"
 ARG NB_UID="1000"
@@ -27,17 +29,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Create SageMaker user
-RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
-    chmod g+w /etc/passwd && \
-    echo "${NB_USER} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+# # Create SageMaker user
+# RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
+#     chmod g+w /etc/passwd && \
+#     echo "${NB_USER} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 # Download and install micromamba
-RUN wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/latest | tar xvj -C /usr/local bin/micromamba
+# RUN wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/latest | tar xvj -C /usr/local bin/micromamba
 
 # install environment and difficult dependency tensornvme
 COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
 
+
+# liburing
+RUN git clone https://github.com/axboe/liburing.git && \
+  cd liburing && \
+  ./configure && \
+  make && \
+  make install
+ENV CUDA_HOME=/opt/conda/targets/x86_64-linux/
+ENV PATH=$PATH:$CUDA_HOME/bin
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64
+USER $MAMBA_USER
 # Create SORA env
 RUN  micromamba install -c conda-forge pyproject2conda && \
     micromamba run pyproject2conda yaml -f /config/workspace/opensora/pyproject.toml --python 3.10 -o environment.yaml -e dev --name opensora && \
@@ -45,12 +58,6 @@ RUN  micromamba install -c conda-forge pyproject2conda && \
     micromamba run -n opensora pip3 install --upgrade pip && \
     micromamba install -n opensora -y conda-forge::cmake conda-forge::make  conda-forge::git
 
-# liburing
-RUN micromamba run -n opensora git clone https://github.com/axboe/liburing.git && \
-  cd liburing && \
-  ./configure && \
-  micromamba run -n opensora make && \
-  micromamba run -n opensora make install
 
 # Tensornvme, used for more efficient computation
 RUN micromamba run -n opensora git clone https://github.com/hpcaitech/TensorNVMe.git && \
@@ -77,9 +84,9 @@ RUN micromamba run -n opensora pip3 install --no-cache-dir \
 
 # # Commands ran each merge
 # # Copy local content and reinstall opensora package
-COPY ./opensora /config/workspace/opensora/opensora
-RUN cd /config/workspace/opensora && \
-    micromamba run -n opensora pip3 install . 
+RUN mkdir /home/$MAMBA_USER -p
+COPY . /home/$MAMBA_USER/
+RUN  cd /home/$MAMBA_USER && micromamba run -n opensora pip3 install . 
 
 # Set default command for JupyterLab
-CMD ["micromamba", "run", "-n", "opensora", "jupyter-lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
+CMD ["micromamba", "run", "-n", "opensora", "jupyter-lab", "--ip='*'", "--NotebookApp.token=''", "--NotebookApp.password=''", "--port=8888", "--no-browser", "--allow-root"]
