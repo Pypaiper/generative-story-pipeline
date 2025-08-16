@@ -353,6 +353,17 @@ resource "aws_sagemaker_domain" "example" {
         image_version_number = 9
       }
     }
+    jupyter_lab_app_settings {
+
+
+      custom_image {
+        app_image_config_name = aws_sagemaker_app_image_config.example.app_image_config_name
+        image_name            = aws_sagemaker_image_version.example.image_name
+        image_version_number = 10
+      }
+    }
+
+
   }
 
   default_space_settings {

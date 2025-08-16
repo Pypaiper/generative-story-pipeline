@@ -19,10 +19,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     wget  \
     curl \
-    libc6 libaio1 libaio-dev \
     build-essential \
     git \
-    vim \
     # python3-pip \
     # python3-dev \
     # nvidia-cuda-toolkit \
@@ -51,28 +49,27 @@ ENV CUDA_HOME=/opt/conda/targets/x86_64-linux/
 ENV PATH=$PATH:$CUDA_HOME/bin
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64
 USER $MAMBA_USER
-# Create SORA env
+
 RUN  micromamba install -c conda-forge pyproject2conda && \
+# Create SORA env
     micromamba run pyproject2conda yaml -f /config/workspace/opensora/pyproject.toml --python 3.10 -o environment.yaml -e dev --name opensora && \
     micromamba env create --file environment.yaml && \
     micromamba run -n opensora pip3 install --upgrade pip && \
-    micromamba install -n opensora -y conda-forge::cmake conda-forge::make  conda-forge::git
-
-
-# Tensornvme, used for more efficient computation
-RUN micromamba run -n opensora git clone https://github.com/hpcaitech/TensorNVMe.git && \
+    micromamba install -n opensora -y conda-forge::cmake conda-forge::make  conda-forge::git && \
+# install tensornvme
+    micromamba run -n opensora git clone https://github.com/hpcaitech/TensorNVMe.git && \
     cd TensorNVMe && \
     micromamba run -n opensora pip install -r requirements.txt && \
-    micromamba run -n opensora pip install -v --no-cache-dir .
-
-
-RUN micromamba run -n opensora pip install --upgrade pip && \
+    micromamba run -n opensora pip install -v --no-cache-dir . && \
+#  # Ensure CUDA-enabled PyTorch
+    micromamba run -n opensora pip install --upgrade pip && \
     micromamba run -n opensora pip3 install --no-cache-dir \
     torch \
     torchvision \
     torchaudio \
-    --index-url https://download.pytorch.org/whl/cu121 # Ensure CUDA-enabled PyTorch
-RUN micromamba run -n opensora pip3 install --no-cache-dir \
+    --index-url https://download.pytorch.org/whl/cu121 && \
+# nice to have libraries
+    micromamba run -n opensora pip3 install --no-cache-dir \
     jupyterlab \
     notebook \
     sagemaker \
@@ -86,7 +83,7 @@ RUN micromamba run -n opensora pip3 install --no-cache-dir \
 # # Copy local content and reinstall opensora package
 RUN mkdir /home/$MAMBA_USER -p
 COPY . /home/$MAMBA_USER/
-RUN  cd /home/$MAMBA_USER && micromamba run -n opensora pip3 install . 
+RUN  cd /home/$MAMBA_USER && micromamba run -n opensora pip3 install -e .
 
 # Set default command for JupyterLab
 CMD ["micromamba", "run", "-n", "opensora", "jupyter-lab", "--ip='*'", "--NotebookApp.token=''", "--NotebookApp.password=''", "--port=8888", "--no-browser", "--allow-root"]
