@@ -40,6 +40,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # install environment and difficult dependency tensornvme
 COPY ./pyproject.toml /config/workspace/opensora/pyproject.toml
 
+
+# liburing
+RUN git clone https://github.com/axboe/liburing.git && \
+  cd liburing && \
+  ./configure && \
+  make && \
+  make install
+ENV CUDA_HOME=/opt/conda/targets/x86_64-linux/
+ENV PATH=$PATH:$CUDA_HOME/bin
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64
+USER $MAMBA_USER
 # Create SORA env
 RUN  micromamba install -c conda-forge pyproject2conda && \
     micromamba run pyproject2conda yaml -f /config/workspace/opensora/pyproject.toml --python 3.10 -o environment.yaml -e dev --name opensora && \
@@ -47,15 +58,7 @@ RUN  micromamba install -c conda-forge pyproject2conda && \
     micromamba run -n opensora pip3 install --upgrade pip && \
     micromamba install -n opensora -y conda-forge::cmake conda-forge::make  conda-forge::git
 
-# liburing
-RUN micromamba run -n opensora git clone https://github.com/axboe/liburing.git && \
-  cd liburing && \
-  ./configure && \
-  micromamba run -n opensora make && \
-  micromamba run -n opensora make install
-ENV CUDA_HOME=/opt/conda/targets/x86_64-linux/
-ENV PATH=$PATH:$CUDA_HOME/bin
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64
+
 # Tensornvme, used for more efficient computation
 RUN micromamba run -n opensora git clone https://github.com/hpcaitech/TensorNVMe.git && \
     cd TensorNVMe && \
@@ -81,9 +84,9 @@ RUN micromamba run -n opensora pip3 install --no-cache-dir \
 
 # # Commands ran each merge
 # # Copy local content and reinstall opensora package
-COPY ./opensora /config/workspace/opensora/opensora
-RUN cd /config/workspace/opensora && \
-    micromamba run -n opensora pip3 install . 
-USER $MAMBA_USER
+RUN mkdir /home/$MAMBA_USER -p
+COPY .. /home/$MAMBA_USER/
+RUN  cd /home/$MAMBA_USER && micromamba run -n opensora pip3 install . 
+
 # Set default command for JupyterLab
-CMD ["micromamba", "run", "-n", "opensora", "jupyter-lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
+CMD ["micromamba", "run", "-n", "/root/.conda/envs/opensora", "jupyter-lab", "--ip='*'", "--NotebookApp.token=''", "--NotebookApp.password=''", "--port=8888", "--no-browser", "--allow-root"]
