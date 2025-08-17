@@ -96,4 +96,4 @@ ENV GID=100
 WORKDIR /home/sagemaker-user/test2
 USER $MAMBA_USER
 ENTRYPOINT ["jupyter-lab"]
-CMD ["—ServerApp.ip=0.0.0.0", "—ServerApp.port=8888", "—ServerApp.allow_origin=*", "—ServerApp.token=''", "—ServerApp.base_url=/jupyterlab/default"] 
+CMD ["--ServerApp.ip=0.0.0.0", "--ServerApp.port=8888", "--ServerApp.allow_origin=*", "--ServerApp.token=''", "--ServerApp.base_url=/jupyterlab/default"] 
