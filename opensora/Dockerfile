@@ -44,7 +44,8 @@ RUN git clone https://github.com/axboe/liburing.git && \
   cd liburing && \
   ./configure && \
   make && \
-  make install
+  make install && \
+  rm -rf build
 ENV CUDA_HOME=/opt/conda/targets/x86_64-linux/
 ENV PATH=$PATH:$CUDA_HOME/bin
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib64
@@ -86,4 +87,13 @@ COPY . /home/$MAMBA_USER/
 RUN  cd /home/$MAMBA_USER && micromamba run -n opensora pip3 install -e .
 
 # Set default command for JupyterLab
-CMD ["micromamba", "run", "-n", "opensora", "jupyter-lab", "--ip='*'", "--NotebookApp.token=''", "--NotebookApp.password=''", "--port=8888", "--no-browser", "--allow-root"]
+ENV SHELL=/bin/bash
+ENV NB_USER=sagemaker-user
+ENV NB_UID=1000
+ENV UID=1000
+ENV NB_GID=100
+ENV GID=100
+WORKDIR /home/sagemaker-user/test2
+USER $MAMBA_USER
+ENTRYPOINT ["jupyter-lab"]
+CMD ["—ServerApp.ip=0.0.0.0", "—ServerApp.port=8888", "—ServerApp.allow_origin=*", "—ServerApp.token=''", "—ServerApp.base_url=/jupyterlab/default"] 

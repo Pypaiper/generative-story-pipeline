@@ -200,6 +200,7 @@ resource "aws_iam_policy" "sagemaker_s3_policy" {
           "sagemaker:DescribeDomain",
           "sagemaker:ListDomains",
           "iam:PassRole",
+          "glue:GetConnections",
         ]
         Effect   = "Allow"
         Resource = [
@@ -326,10 +327,14 @@ resource "aws_sagemaker_image_version" "example" {
 
 resource "aws_sagemaker_app_image_config" "example" {
   app_image_config_name = "my-custom-app-config"
+
   kernel_gateway_image_config {
     kernel_spec {
       display_name = "Python 3 (Custom)"
       name         = "python3"
+    }
+    file_system_config {
+      mount_path = "/home/sagemaker-user/test" # Specify your desired mount path here
     }
   }
 }
@@ -350,7 +355,7 @@ resource "aws_sagemaker_domain" "example" {
       custom_image {
         app_image_config_name = aws_sagemaker_app_image_config.example.app_image_config_name
         image_name            = aws_sagemaker_image_version.example.image_name
-        image_version_number = 9
+        image_version_number = 15
       }
     }
     jupyter_lab_app_settings {
@@ -359,7 +364,7 @@ resource "aws_sagemaker_domain" "example" {
       custom_image {
         app_image_config_name = aws_sagemaker_app_image_config.example.app_image_config_name
         image_name            = aws_sagemaker_image_version.example.image_name
-        image_version_number = 10
+        image_version_number = 15
       }
     }
 
