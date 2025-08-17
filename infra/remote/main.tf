@@ -355,7 +355,7 @@ resource "aws_sagemaker_domain" "example" {
       custom_image {
         app_image_config_name = aws_sagemaker_app_image_config.example.app_image_config_name
         image_name            = aws_sagemaker_image_version.example.image_name
-        image_version_number = 15
+        image_version_number = 18
       }
     }
     jupyter_lab_app_settings {
@@ -364,7 +364,7 @@ resource "aws_sagemaker_domain" "example" {
       custom_image {
         app_image_config_name = aws_sagemaker_app_image_config.example.app_image_config_name
         image_name            = aws_sagemaker_image_version.example.image_name
-        image_version_number = 15
+        image_version_number = 18
       }
     }
 
