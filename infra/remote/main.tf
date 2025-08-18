@@ -160,6 +160,13 @@ resource "aws_iam_role" "sagemaker_role" {
           Service = "s3.amazonaws.com"
         }
       },
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      },
     ]
   })
 }
@@ -187,6 +194,13 @@ resource "aws_iam_policy" "sagemaker_s3_policy" {
           "ecr:UploadLayerPart",
           "ecr:CompleteLayerUpload",
           "ecr:PutImage",
+          "ecr:BatchGetImage", 
+          "ecr:DescribeImages",
+          "sagemaker:DescribeImageVersion",
+          "sagemaker:DescribeDomain",
+          "sagemaker:ListDomains",
+          "iam:PassRole",
+          "glue:GetConnections",
         ]
         Effect   = "Allow"
         Resource = [
@@ -209,7 +223,6 @@ resource "aws_iam_role_policy_attachment" "sagemaker_s3_attachment" {
   role       = aws_iam_role.sagemaker_role.name
   policy_arn = aws_iam_policy.sagemaker_s3_policy.arn
 }
-
 
 
 resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "example" {
@@ -262,4 +275,118 @@ resource "aws_ecr_repository" "pypaiper_repository" {
     scan_on_push = true
   }
 
+}
+
+
+resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "lc" {
+  name      = "foo"
+  on_create = base64encode("echo foo")
+  on_start  = base64encode("echo bar")
+}
+
+
+# Create a SageMaker Image
+resource "aws_sagemaker_image" "pypaiper" {
+  image_name = "pypaiper"
+  role_arn   = aws_iam_role.sagemaker_role.arn
+  tags = {
+    Environment = "Development"
+  }
+}
+
+
+resource "aws_ecr_repository_policy" "my_repository_policy" {
+      repository = aws_ecr_repository.pypaiper_repository.name
+      policy = jsonencode({
+        Version = "2012-10-17"
+        Statement = [
+          {
+            Sid    = "AllowIAMRoleAccess"
+            Effect = "Allow"
+            Principal = {
+              AWS = aws_iam_role.sagemaker_role.arn
+            }
+            Action = [
+              "ecr:GetDownloadUrlForLayer",
+              "ecr:BatchGetImage",
+              "ecr:BatchCheckLayerAvailability",
+              "ecr:PutImage",
+              "ecr:InitiateLayerUpload",
+              "ecr:UploadLayerPart",
+              "ecr:CompleteLayerUpload",
+            ]
+          },
+        ]
+      })
+    }
+
+resource "aws_sagemaker_image_version" "example" {
+  image_name = aws_sagemaker_image.pypaiper.id
+  base_image = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest1"
+}
+
+resource "aws_sagemaker_app_image_config" "example" {
+  app_image_config_name = "my-custom-app-config"
+
+  kernel_gateway_image_config {
+    kernel_spec {
+      display_name = "Python 3 (Custom)"
+      name         = "python3"
+    }
+    file_system_config {
+      mount_path = "/home/sagemaker-user" # Specify your desired mount path here
+      default_uid = 1000
+      default_gid = 100
+    }
+  }
+}
+
+
+
+resource "aws_sagemaker_domain" "example" {
+  domain_name = "example"
+  auth_mode   = "IAM"
+  vpc_id      = aws_vpc.main.id
+  subnet_ids  = aws_subnet.private.*.id
+
+
+  default_user_settings {
+    execution_role = aws_iam_role.sagemaker_role.arn
+
+    kernel_gateway_app_settings {
+      custom_image {
+        app_image_config_name = aws_sagemaker_app_image_config.example.app_image_config_name
+        image_name            = aws_sagemaker_image_version.example.image_name
+        image_version_number = 21
+      }
+    }
+    jupyter_lab_app_settings {
+
+
+      custom_image {
+        app_image_config_name = aws_sagemaker_app_image_config.example.app_image_config_name
+        image_name            = aws_sagemaker_image_version.example.image_name
+        image_version_number = 21
+      }
+    }
+
+
+  }
+
+  default_space_settings {
+    execution_role = aws_iam_role.sagemaker_role.arn
+    jupyter_lab_app_settings {
+      default_resource_spec {
+        instance_type = "ml.t3.medium"
+        sagemaker_image_arn = aws_sagemaker_image.pypaiper.arn
+      }
+      # Optional:
+      # app_lifecycle_management {
+      #   lifecycle_config_arn = "arn:aws:sagemaker:us-east-1:123456789012:app-lifecycle-config/my-jupyterlab-config"
+      # }
+      # code_repository {
+      #   repository_url = "https://github.com/my-org/my-repo.git"
+      # }
+    }
+  }
 }
