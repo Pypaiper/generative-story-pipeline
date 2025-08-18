@@ -10,4 +10,4 @@ infra/remote/terraform.tfstate
 infra/remote/terraform.tfstate.backup
 infra/remote/.terraform.lock.hcl
 infra/remote/tfplan
-infra/remote/terraform.tfvars
+infra/remote/*.tfvars
