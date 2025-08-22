@@ -216,7 +216,7 @@ resource "aws_iam_policy" "sagemaker_s3_policy" {
 
 resource "aws_iam_role_policy_attachment" "sagemaker_policy_attachment" {
   role       = aws_iam_role.sagemaker_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
+  policy_arn = aws_iam_policy.sagemaker_role.arn
 }
 
 resource "aws_iam_role_policy_attachment" "sagemaker_s3_attachment" {
@@ -321,7 +321,7 @@ resource "aws_ecr_repository_policy" "my_repository_policy" {
     }
 
 resource "aws_sagemaker_image_version" "example" {
-  image_name = aws_sagemaker_image.pypaiper.id
+  image_name = aws_sagemaker_image.pypaiper.image_name
   base_image = "${aws_ecr_repository.pypaiper_repository.repository_url}:latest1"
 }
 
@@ -341,7 +341,22 @@ resource "aws_sagemaker_app_image_config" "example" {
   }
 }
 
-
+resource "aws_iam_role" "sagemaker_role" {
+  name = "sagemaker-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      { Effect = "Allow", Action = ["ecr:GetAuthorizationToken"], Resource = "*" },
+      { Effect = "Allow", Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ],
+        Resource = aws_ecr_repository.pypaiper_repository.arn
+      }
+    ]
+  })
+}
 
 resource "aws_sagemaker_domain" "example" {
   domain_name = "example"
